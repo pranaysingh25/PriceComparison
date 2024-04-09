@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Object Detection and Price Comparison</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 20px;
+      background-image: url('background.webp'); /* Replace 'background.jpg' with your image path */
+      background-size: cover;
+      background-position: center;
+      backdrop-filter: blur(5px);
+      background-blur: 5px;
+      height: 100vh; /* Set height to 100% of viewport height */
+    }
+
+    .container {
+      max-width: 600px;
+      margin: 0 auto;
+      background-color: rgba(255, 255, 255, 0.8); /* Use rgba to add transparency */
+      padding: 40px;
+      border-radius: 10px;
+      box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
+    }
+
+    h1 {
+      text-align: center;
+      margin-bottom: 30px;
+      color: #007bff;
+    }
+
+    .button {
+      background-color: #007bff;
+      color: #ffffff;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 5px;
+      cursor: pointer;
+      transition: background-color 0.3s ease;
+      display: block;
+      width: calc(100% - 40px); /* Set a fixed width for all buttons */
+      text-align: center;
+      margin: 0 auto 20px; /* Center the buttons and add bottom margin */
+    }
+
+    .button:hover {
+      background-color: #0056b3;
+    }
+
+    #file-input {
+      display: none;
+    }
+
+    #image-output {
+      text-align: center;
+      margin-bottom: 20px;
+      display: none; /* Initially hide the image container */
+    }
+
+    #results {
+      margin-bottom: 30px;
+    }
+
+    .object-list {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+    }
+
+    .object-list li {
+      margin-bottom: 10px;
+    }
+
+    .object-list li a {
+      color: #007bff;
+      text-decoration: none;
+      transition: color 0.3s ease;
+    }
+
+    .object-list li a:hover {
+      color: #0056b3;
+    }
+
+    #clear-btn {
+      background-color: #dc3545;
+      display: none; /* Initially hide the clear button */
+    }
+
+    #uploaded-image {
+      max-width: 100%;
+      height: auto;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div id="prices-container"></div>
+    <h1>Object Detection and Price Comparison</h1>
+    <input type="file" id="file-input" onchange="uploadImage(event)">
+    <label for="file-input" class="button">Upload Image</label>
+    <div id="image-output">
+      <img id="uploaded-image" src="" alt="Uploaded Image">
+    </div>
+    <button class="button" onclick="detectObjects()" id="detect-button" style="display: none;">Detect Objects</button>
+    <div id="results"></div>
+    <button class="button" onclick="clearResults()" id="clear-btn" style="display: none;">Clear Results</button>
+  </div>
+
+  <script>
+    function uploadImage(event) {
+      var image = document.getElementById('uploaded-image');
+      image.src = URL.createObjectURL(event.target.files[0]);
+      document.getElementById('image-output').style.display = 'block'; // Show the image container
+      document.getElementById('detect-button').style.display = 'block'; // Show the detect button
+      document.getElementById('clear-btn').style.display = 'block'; // Show the clear button
+
+      // Get the file object directly and pass it to detectObjects function
+      var fileInput = document.getElementById('file-input');
+      detectObjects(fileInput.files[0]);
+    }
+
+    function detectObjects(imageFile) {
+      console.log("Sending image request...");
+      var formData = new FormData();
+      formData.append('file', imageFile);
+
+      fetch('http://localhost:5000/detect_objects', {
+        method: 'POST',
+        body: formData
+      })
+      .then(response => response.json())
+      .then(data => {
+        // Log the received JSON data
+        console.log('Received JSON data:', data);
+        // Call the showResults function as before
+        showResults(data);
+      })
+      .catch(error => console.error('Error:', error));
+    }
+    // function detectObjects() {
+    //   var formData = new FormData();
+    //   var fileInput = document.getElementById('file-input');
+    //   formData.append('file', fileInput.files[0]);
+
+    //   fetch('http://localhost:5000/detect_objects', {
+    //     method: 'POST',
+    //     body: formData
+    //   })
+    //   .then(response => response.json())
+    //   .then(data => showResults(data))
+    //   .catch(error => console.error('Error:', error));
+    // }
+
+    function showResults(objects) {
+      let resultsDiv = document.getElementById("results");
+      resultsDiv.innerHTML = "<h3>Detected Objects:</h3>";
+      let list = "<ul class='object-list'>";
+      for (let object of objects) {
+        list += "<li><a href='#' onclick='scrapePrices(\"" + object + "\")'>" + object + "</a></li>";
+      }
+      list += "</ul>";
+      resultsDiv.innerHTML += list;
+    }
+
+    function scrapePrices(object) {
+      var formData = new FormData();
+      formData.append('object', object);
+
+      fetch('http://localhost:5000/scrape_prices', {
+        method: 'POST',
+        body: formData
+      })
+      .then(response => response.json())
+      .then(data => displayPrices(data))
+      .catch(error => console.error('Error:', error));
+    }
+
+function displayPrices(prices) {
+  console.log("Received prices data:", prices); // Log the received prices data
+  
+  // Get the container element where prices will be displayed
+  let pricesContainer = document.getElementById("prices-container");
+
+  // Check if the pricesContainer element exists
+  if (pricesContainer) {
+    // Clear previous prices
+    pricesContainer.innerHTML = "";
+
+    // Create a table element
+    let table = document.createElement("table");
+    table.classList.add("prices-table");
+    table.classList.add("table-bordered"); // Add border to the outside of the table
+
+    // Create table header row
+    let headerRow = table.insertRow();
+    let headers = ["PRODUCT", "PRICE", "WEBSITE"];
+    for (let header of headers) {
+      let th = document.createElement("th");
+      th.textContent = header;
+      headerRow.appendChild(th);
+    }
+
+    // Iterate over the prices data and create table rows for each price entry
+    for (let price of prices) {
+      // Create a table row
+      let row = table.insertRow();
+
+      // Create table cells for each property
+      for (let key of headers) {
+        let cell = row.insertCell();
+        let value = price[key.toUpperCase()]; // Get value from price object based on key
+        // Trim the value if it's too long
+        if (value && value.length > 50) {
+          value = value.substring(0, 50) + "...";
+        }
+        cell.textContent = value || ""; // If value is null or undefined, display empty string
+      }
+    }
+
+    // Append the table to the pricesContainer
+    pricesContainer.appendChild(table);
+  } else {
+    console.error("Error: pricesContainer element not found");
+  }
+}
+
+    function clearResults() {
+      document.getElementById("image-output").innerHTML = "";
+      document.getElementById("results").innerHTML = "";
+      document.getElementById('image-output').style.display = 'none';
+      document.getElementById('detect-button').style.display = 'none';
+      document.getElementById('clear-btn').style.display = 'none';
+      document.getElementById("prices-container").innerHTML = ""; // Clear the entire table
+    }
+
+    // Add the DOMContentLoaded event listener here
+    document.addEventListener("DOMContentLoaded", function() {
+      // Optionally, you can add any initialization code here
+    });
+
+  </script>
+</body>
+</html>
