@@ -1,21 +1,19 @@
 import streamlit as st
+from pricecomparison import object_recognition, get_google_shopping_prices
+from PIL import Image
+import pandas as pd
 
 # Function to detect objects in the uploaded image
 def detect_objects(image):
-    # Your object detection code here
-    # This function should return a list of detected object names
-    return ['cat', 'dog', 'car']
+    image = Image.open(image)
+    print("EEeeeeeeeeeee", type(image))
+    detected_objects = object_recognition(image)
+    return detected_objects
 
 # Function to find prices of objects on online retailers
 def find_prices(object_name):
-    # Your price finder code here
-    # This function should return a dictionary with keys as the retailer name
-    # and values as the price and link
-    return {
-        'Amazon': {'price': '$100', 'link': 'https://www.amazon.com'},
-        'eBay': {'price': '$90', 'link': 'https://www.ebay.com'},
-        'Walmart': {'price': '$95', 'link': 'https://www.walmart.com'}
-    }
+    prices_info = get_google_shopping_prices(object_name)
+    return prices_info
 
 # Streamlit app
 def main():
@@ -51,10 +49,15 @@ def main():
                 st.session_state.selected_object = object_name
                 st.write("Prices for", object_name)
                 prices = find_prices(object_name)
-                table = []
-                for retailer, info in prices.items():
-                    table.append([retailer, info['price'], info['link']])
-                st.session_state.prices_table = st.table(table)
+                df = pd.DataFrame(prices)
+                st.session_state.editor = st.data_editor(
+                        df,
+                        column_config={
+                        "column 1": "PRODUCT",
+                        "column 2": "PRICE",
+                        "column 3": "WEBSITE",
+                        },
+                    )
 
     if st.button('Clear Results'):
         st.session_state.clear()  # Clear all session state variables

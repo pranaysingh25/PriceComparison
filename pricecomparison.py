@@ -19,7 +19,6 @@ from bs4 import BeautifulSoup # web scrapping
 def object_recognition(img):
     model = YOLO("yolov8l.pt")
     allowed_objects = [24,25,26,28,29,39,40,41,42,67]
-    print("EEEEEEEEEEE", type(img))
     results = model.predict(source=img, conf=0.8, max_det=3, classes= allowed_objects, show=False, save=False)  # save plotted images
 
     objects = []
@@ -58,12 +57,7 @@ def get_google_shopping_prices(query):
 
         article = {'PRODUCT': name.strip(), 'PRICE': price, 'WEBSITE': website}
         products.append(article)
-
-#         print("name:", name.strip())
-#         print("price:", price)
-#         print("URL:", website)
-#         print()
-
+        
     return products
 
 ## ALGORITHM TO COMPARE PRICES AND LIST THEM FROM LOWER TO HIGHER
