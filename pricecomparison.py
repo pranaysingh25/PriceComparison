@@ -13,6 +13,12 @@ from ultralytics import YOLO
 from PIL import Image
 import requests
 from bs4 import BeautifulSoup # web scrapping
+from azure.storage.blob import BlobServiceClient
+import cv2
+import json
+import uuid, io
+import time
+
 
 ## BASIC OBJECT RECOGNITION USING PRE-TRAINED MODEL YOLO
 
@@ -32,6 +38,7 @@ def object_recognition(img):
             objects.append(model.names[int(c)])
 
     objects = set(objects)
+    store_image_to_blob(img)
 #     print("objects detected in the image are:", objects)
 
     return list(objects)
@@ -113,32 +120,31 @@ Images with object detections are stored in local storage, it will be replaced b
 #             print(key,": ", value)
 #         print()
 
-# """Cloud Storage of Pictures"""
+"""Cloud Storage of Pictures"""
+# Azure Blob Storage connection string and container name
+connection_string = "DefaultEndpointsProtocol=https;AccountName=firstspace;AccountKey=NUDjymihD3i2fxqpf+vMQrUMsd7r63K7xMFx2nvAEOLxFL9CEvaRp23WuFrcrcOkl9+C3iYD60ZO+AStJbjokw==;EndpointSuffix=core.windows.net"
+container_name = "firstcontainer"
 
-# from azure.storage.blob import BlobServiceClient
-# import cv2
-# import json
+# Connect to Azure Blob Storage
+blob_service_client = BlobServiceClient.from_connection_string(connection_string)
+container_client = blob_service_client.get_container_client(container_name)
 
-# # Azure Blob Storage connection string and container name
-# connection_string = "DefaultEndpointsProtocol=https;AccountName=firstspace;AccountKey=NUDjymihD3i2fxqpf+vMQrUMsd7r63K7xMFx2nvAEOLxFL9CEvaRp23WuFrcrcOkl9+C3iYD60ZO+AStJbjokw==;EndpointSuffix=core.windows.net"
-# container_name = "firstcontainer"
+# Function to store image and bounding box in Azure Blob Storage
+def store_image_to_blob(image_path):
+    # Upload image to Blob Storage
+    # Convert the PIL image to bytes
+    with io.BytesIO() as output:
+        image_path.save(output, format="JPEG")
+        image_bytes = output.getvalue()
+    unique_name = str(int(time.time())) + '.jpeg'
+    blob_client = container_client.get_blob_client(blob=unique_name)
+    blob_client.upload_blob(image_bytes)
 
-# # Connect to Azure Blob Storage
-# blob_service_client = BlobServiceClient.from_connection_string(connection_string)
-# container_client = blob_service_client.get_container_client(container_name)
-
-# # Function to store image and bounding box in Azure Blob Storage
-# def store_image_to_blob(image_path, bounding_box):
-#     # Upload image to Blob Storage
-#     with open(image_path, "rb") as image_file:
-#         blob_client = container_client.get_blob_client(blob=image_path)
-#         blob_client.upload_blob(image_file)
-
-#     # # Store bounding box data as JSON metadata
-#     # blob_metadata = {
-#     #     "bounding_box": bounding_box
-#     # }
-#     # blob_client.set_blob_metadata(metadata=blob_metadata)
+    # # Store bounding box data as JSON metadata
+    # blob_metadata = {
+    #     "bounding_box": bounding_box
+    # }
+    # blob_client.set_blob_metadata(metadata=blob_metadata)
 
 # # Example usage
 # image_path = 'sample_image.jpeg'
