@@ -25,7 +25,7 @@ import time
 def object_recognition(img):
     model = YOLO("yolov8l.pt")
     allowed_objects = [24,25,26,28,29,39,40,41,42,67]
-    results = model.predict(source=img, conf=0.8, max_det=3, classes= allowed_objects, show=False, save=False)  # save plotted images
+    results = model.predict(source=img, conf=0.8, max_det=3, show=False, save=False)  # save plotted images
 
     objects = []
     for r in results:
