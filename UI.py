@@ -1,3 +1,5 @@
+import os
+os.environ["MESA_LOADER_DRIVER_OVERRIDE"] = "llvmpipe"
 import streamlit as st
 from pricecomparison import object_recognition, get_google_shopping_prices
 from PIL import Image
